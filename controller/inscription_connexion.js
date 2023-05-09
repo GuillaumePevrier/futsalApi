@@ -1,47 +1,46 @@
-const bcrypt = require( "bcrypt" );
+const bcrypt = require('bcrypt');
+const Joueurs = require('../models/Joueurs');
+const jwt = require('jsonwebtoken');
 
-const { Joueurs } = require( "../models/Joueurs" );
+exports.inscription = (req, res, next) => {
+	console.log("Inscription d'un nouveau joueur...");
+	bcrypt
+		.hash(req.body.Mot_de_passe, 10)
+		.then(hash => {
+			const new_joueur = new Joueurs({
+				Nom_joueur: req.body.Nom_joueur,
+				Prenom_joueur: req.body.Prenom_joueur,
+				Email: req.body.Email,
+				Mot_de_passe: hash,
+				Date_naissance: req.body.Date_naissance,
+				Numero_maillot: req.body.Numero_maillot,
+				Poste: req.body.Poste,
+			});
+			// // Utilisation de la méthode save() pour l'ajout dans Mongodb
+			new_joueur
+				.save()
+				.then(() => res.status(201).json({ message: 'Le joueur a été créé !' }))
+				.catch(error => res.status(400).json({ error }));
+		})
+		.catch(error => res.status(500).json({ error }));
+};
 
-function inscription( req, resp ) {
-    console.log( "Inscription d'un nouveau joueur...")
-    bcrypt.hash( req.body.Mot_de_passe, 10 )
-        
-        .then( hash => {
-            const new_joueur = new Joueurs({
-                Nom_joueur : req.body.Nom_joueur,
-                Prenom_joueur : req.body.Prenom_joueur,
-                Email : req.body.Email,
-                Mot_de_passe : hash,
-            });
-            // // Utilisation de la méthode save() pour l'ajout dans Mongodb
-            new_joueur.save()
-                .then(() => resp.status(201).json({ message: 'Le joueur a été créé !'}))
-                .catch(error => resp.status(400).json({ error }));
-        })
-        .catch( error => resp.status( 500 ).json({ error }));
-    
-}
-
-function connexion( req, resp ) {
-    console.log( "Connexion d'un joueur...")
-    Joueurs.findOne( { Email : req.body.Email } )
-        .then( joueur => {
-            if ( !joueur ){
-                resp.status(401).json({ status : 401, message : 'Unauthorized' });
-            } 
-            else{
-                bcrypt.compare( req.body.Mot_de_passe, joueur.Mot_de_passe )
-                    .then ( validation => {
-                        if( !validation ){
-                            resp.status(401).json( { status : 401, message : "Mot de passe incorrect !" });        
-                        }
-                        resp.status(200).json( { status : 200, message : "Joueur connecté!", joueurId :  joueur._id, token : 'TOKEN'})
-                });
-            }
-        });
-}
-        
-
-
-
-module.exports = { inscription, connexion};
+exports.connexion = (req, res, next) => {
+	console.log("Connexion d'un joueur...");
+	Joueurs.findOne({ Email: req.body.Email })
+		.then(joueur => {
+			if (!joueur) {
+				return res.status(401).json({ error: 'Utilisateur non trouvé !' });
+			}
+			const passwordMatch = bcrypt.compareSync(req.body.Mot_de_passe, joueur.Mot_de_passe);
+			if (!passwordMatch) {
+				return res.status(401).json({ error: 'Mot de passe incorrect !' });
+			}
+			const token = jwt.sign({ joueurId: joueur._id }, 'RANDOM_TOKEN_SECRET', { expiresIn: '24h' });
+			res.status(200).json({
+				joueurId: joueur._id,
+				token: token,
+			});
+		})
+		.catch(error => res.status(500).json({ error }));
+};
