@@ -44,3 +44,28 @@ exports.connexion = (req, res, next) => {
 		})
 		.catch(error => res.status(500).json({ error }));
 };
+
+// exports.connexion = (req, res, next) => {
+//    Joueurs.findOne({ Email: req.body.Email })
+//        .then(joueur => {
+//            if (!joueur) {
+//                return res.status(401).json({ error: 'Utilisateur non trouvé !' });
+//            }
+//            bcrypt.compare(req.body.Mot_de_passe, joueur.Mot_de_passe)
+//                .then(valid => {
+//                    if (!valid) {
+//                        return res.status(401).json({ error: 'Mot de passe incorrect !' });
+//                    }
+//                    res.status(200).json({
+//                        joueurId: user._id,
+//                        token: jwt.sign(
+//                            { userId: joueur._id },
+//                            'RANDOM_TOKEN_SECRET',
+//                            { expiresIn: '24h' }
+//                        )
+//                    });
+//                })
+//                .catch(error => res.status(500).json({ error }));
+//        })
+//        .catch(error => res.status(500).json({ error }));
+// };

@@ -2,10 +2,12 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const router = express.Router();
 
+const auth = require('../middleware/auth');
+
 const Joueurs = require('../models/Joueurs');
 
 // Récupération de tous les utilisateurs
-router.get('/joueurs', async (req, resp) => {
+router.get('/joueurs', auth, async (req, resp) => {
 	console.log('Recherche de tous les joueurs en base de données...');
 	const result_joueurs = await Joueurs.find();
 	resp.status(200).json(result_joueurs);
@@ -13,10 +15,10 @@ router.get('/joueurs', async (req, resp) => {
 
 // Récupération de l'utilisateur dont le nom
 // est passé en paramètre via :Nom
-router.get('/joueurs/:Nom', async (req, resp) => {
+router.get('/joueurs/:Id', auth, async (req, resp) => {
 	console.log("Recherche d'un joueur en base de données...");
-	const { Nom_joueur } = req.params;
-	const result_joueur = await Joueurs.findOne(Nom_joueur);
+	const { Id } = req.params;
+	const result_joueur = await Joueurs.findById(Id);
 	resp.status(200).json(result_joueur);
 });
 
