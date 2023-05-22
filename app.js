@@ -1,20 +1,18 @@
 const { connecter, getConnection } = require('./db/connect');
-var bodyParser = require('body-parser');
-
-//L'application requiert l'utilisation du module Express.
-//La variable express nous permettra d'utiliser les fonctionnalités du module Express.
+const bodyParser = require('body-parser');
 const express = require('express');
-// Nous créons un objet de type Express.
 const app = express();
-// On récupère toutes les routes défini
-const routes = require('./routes/routes');
-const joueurRoutes = require('./routes/inscription_connexion');
+const path = require('path');
 
-// Nous définissons ici les paramètres du serveur.
-// var hostname = 'localhost';
-// var port = 3000;
+const joueurRoutes = require('./routes/joueurRoutes');
+const equipeRoutes = require('./routes/equipeRoutes');
+const matchRoutes = require('./routes/matchRoutes');
+const competitionRoutes = require('./routes/competitionRoutes');
+const convocationRoutes = require('./routes/convocationRoutes'); 
+const entrainementRoutes = require('./routes/entrainementRoutes'); 
+const clubRoutes = require('./routes/clubRoutes'); 
+const messageRoutes = require('./routes/messageRoutes'); 
 
-//URL de notre base
 const url = 'mongodb+srv://nbfcfutsal:nbfcfutsal123@nbfcfutsal.lyhk8kf.mongodb.net/nbfcfutsal?retryWrites=true&w=majority';
 
 connecter(url);
@@ -30,10 +28,17 @@ if (getConnection) {
 	app.use(bodyParser.urlencoded({ extended: true }));
 	app.use(bodyParser.json());
 
-	app.use('/api', routes);
 	app.use('/api/auth', joueurRoutes);
+	app.use('/api/equipes', equipeRoutes);
+	app.use('/api/matchs', matchRoutes);
+	app.use('/api/competitions', competitionRoutes);
+	app.use('/api/convocations', convocationRoutes); 
+	app.use('/api/entrainements', entrainementRoutes); 
+	app.use('/api/clubs', clubRoutes); 
+	app.use('/api/messages', messageRoutes); 
+	app.use('/images', express.static(path.join(__dirname, 'images')));
 
 	app.listen(3000, () => {
-		console.log('Server has started!');
+		console.log('Le serveur a démarré !');
 	});
 }
