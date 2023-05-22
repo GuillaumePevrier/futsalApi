@@ -1,4 +1,4 @@
-const Match = require('../models/match');
+const Match = require('../models/Match');
 
 // Récupérer tous les matchs
 exports.getAllMatchs = async (req, res) => {
