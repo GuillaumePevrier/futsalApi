@@ -1,4 +1,4 @@
-const Competition = require('../models/competition');
+const Competition = require('../models/Competition');
 
 // Récupérer toutes les compétitions
 exports.getAllCompetitions = async (req, res) => {
