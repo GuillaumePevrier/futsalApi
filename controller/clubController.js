@@ -1,4 +1,12 @@
 const Club = require('../models/Club');
+const cloudinary = require('cloudinary').v2;
+
+// Configuration 
+cloudinary.config({
+  cloud_name: "dfyzonzsj",
+  api_key: "272913112564242",
+  api_secret: "n_0vxgVsNBRG9gnpCnBY9JbSDZA"
+});
 
 // Récupérer tous les clubs
 exports.getAllClubs = async (req, res) => {
@@ -35,13 +43,17 @@ exports.createClub = async (req, res) => {
   let fileName = '';
 
   if (req.file) {
-    // Génération du nom de fichier unique comme expliqué précédemment
+    try {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      imageClub = result.secure_url;
 
-    // Enregistrement de l'image dans le répertoire approprié (par exemple, le dossier "images")
-    fileName = req.file.filename;
-    const imagePath = path.join('images', fileName);
-    req.file.path = imagePath; // Met à jour le chemin d'accès avec le chemin relatif
-    imageClub = imagePath;
+      // Supprimer le fichier temporaire
+      fs.unlinkSync(req.file.path);
+    } catch (error) {
+      console.error('Une erreur est survenue lors du téléchargement de l\'image:', error);
+      res.status(500).json({ error: 'Une erreur est survenue lors du téléchargement de l\'image.' });
+      return;
+    }
   }
 
   const club = new Club({
@@ -55,11 +67,10 @@ exports.createClub = async (req, res) => {
   try {
     const nouveauClub = await club.save();
 
-    // Récupération de l'URL complète de l'image
     const imageUrl = `${req.protocol}://${req.get('host')}/${imageClub.replace(/\.(jpg|png)$/, '.webp')}`;
-    nouveauClub.imageClub = imageUrl; // Met à jour la propriété imageClub avec l'URL complète
+    nouveauClub.imageClub = imageUrl;
 
-    await nouveauClub.save(); // Enregistre à nouveau le club avec l'URL mise à jour
+    await nouveauClub.save();
 
     res.status(201).json(nouveauClub);
   } catch (error) {
@@ -71,10 +82,10 @@ exports.createClub = async (req, res) => {
 const fs = require('fs');
 
 
-// Mettre à jour un club
 exports.updateClub = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
+
   try {
     const club = await Club.findById(id);
     if (!club) {
@@ -85,17 +96,18 @@ exports.updateClub = async (req, res) => {
     let fileName = '';
 
     if (req.file) {
-      // Génération du nom de fichier unique comme expliqué précédemment
+      try {
+        const result = await cloudinary.uploader.upload(req.file.path);
+        imageClub = result.secure_url;
 
-      // Enregistrement de la nouvelle image dans le répertoire approprié (par exemple, le dossier "images")
-      fileName = req.file.filename;
-      const imagePath = path.join('images', fileName);
-      req.file.path = imagePath; // Met à jour le chemin d'accès avec le chemin relatif
-      imageClub = imagePath;
-
-      // Suppression de l'ancienne image
-      if (fs.existsSync(path.join('images', path.basename(club.imageClub)))) {
-        fs.unlinkSync(path.join('images', path.basename(club.imageClub)));
+        // Supprimer l'ancienne image
+        await cloudinary.uploader.destroy(path.basename(club.imageClub));
+        // Supprimer le fichier temporaire
+        fs.unlinkSync(req.file.path);
+      } catch (error) {
+        console.error("Une erreur est survenue lors du téléchargement de l'image :", error);
+        res.status(500).json({ error: "Une erreur est survenue lors du téléchargement de l'image." });
+        return;
       }
     }
 
@@ -104,12 +116,10 @@ exports.updateClub = async (req, res) => {
 
     const updatedClub = await club.save();
 
-    // Récupération de l'URL complète de la nouvelle image
-    const imageUrl = `${req.protocol}://${req.get('host')}/${imageClub.replace(/\.jpg$/, '.webp')}`;
+    const imageUrl = `${req.protocol}://${req.get('host')}/${imageClub.replace(/\.(jpg|png)$/, '.webp')}`;
+    updatedClub.imageClub = imageUrl;
 
-    updatedClub.imageClub = imageUrl; // Met à jour la propriété imageClub avec l'URL complète
-
-    await updatedClub.save(); // Enregistre à nouveau le club avec l'URL mise à jour
+    await updatedClub.save();
 
     res.status(200).json(updatedClub);
   } catch (error) {
@@ -127,6 +137,11 @@ exports.deleteClub = async (req, res) => {
     if (!club) {
       res.status(404).json({ error: 'Club introuvable.' });
     } else {
+      // Supprimer l'image correspondante du dossier "images"
+      if (fs.existsSync(path.join('images', path.basename(club.imageClub)))) {
+        fs.unlinkSync(path.join('images', path.basename(club.imageClub)));
+      }
+
       res.status(200).json({ message: 'Club supprimé avec succès.' });
     }
   } catch (error) {
