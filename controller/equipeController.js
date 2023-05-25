@@ -2,16 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const Equipe = require('../models/Equipe');
 
-const cloudinary = require('cloudinary').v2;
-
-
-// Configuration 
-cloudinary.config({
-  cloud_name: "dfyzonzsj",
-  api_key: "272913112564242",
-  api_secret: "n_0vxgVsNBRG9gnpCnBY9JbSDZA"
-});
-
 // Récupérer toutes les équipes
 exports.getAllEquipes = async (req, res) => {
   try {
@@ -38,7 +28,6 @@ exports.getEquipeById = async (req, res) => {
 };
 
 // Créer une équipe
-// Créer une équipe
 exports.createEquipe = async (req, res) => {
   const { nom, categorieAge, joueurs, matchs, club } = req.body;
 
@@ -46,8 +35,10 @@ exports.createEquipe = async (req, res) => {
   let fileName = '';
 
   if (req.file) {
-    const result = await cloudinary.uploader.upload(req.file.path);
-    imageEquipe = result.secure_url;
+    fileName = req.file.filename;
+    const imagePath = path.join('images', fileName);
+    req.file.path = imagePath;
+    imageEquipe = imagePath;
   }
 
   const equipe = new Equipe({ nom, categorieAge, joueurs, matchs, imageEquipe, club });
@@ -67,7 +58,7 @@ exports.createEquipe = async (req, res) => {
   }
 };
 
-// Créer une équipe
+// Mettre à jour une équipe
 exports.updateEquipe = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
@@ -81,12 +72,13 @@ exports.updateEquipe = async (req, res) => {
     let fileName = '';
 
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path);
-      imageEquipe = result.secure_url;
+      fileName = req.file.filename;
+      const imagePath = path.join('images', fileName);
+      req.file.path = imagePath;
+      imageEquipe = imagePath;
 
-      if (equipe.imageEquipe) {
-        const publicId = equipe.imageEquipe.split('/').pop().split('.')[0];
-        await cloudinary.uploader.destroy(publicId);
+      if (fs.existsSync(path.join('images', path.basename(equipe.imageEquipe)))) {
+        fs.unlinkSync(path.join('images', path.basename(equipe.imageEquipe)));
       }
     }
 
@@ -95,7 +87,8 @@ exports.updateEquipe = async (req, res) => {
 
     const updatedEquipe = await equipe.save();
 
-    const imageUrl = `${req.protocol}://${req.get('host')}/${imageEquipe.replace(/\.(jpg|png)$/, '.webp')}`;
+    const imageUrl = `${req.protocol}://${req.get('host')}/${imageEquipe.replace(/\.jpg$/, '.webp')}`;
+
     updatedEquipe.imageEquipe = imageUrl;
 
     await updatedEquipe.save();
